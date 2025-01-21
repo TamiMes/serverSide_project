@@ -6,11 +6,12 @@ const logger = require('morgan');
 const mongoose = require('mongoose'); // Import mongoose
 require('dotenv').config(); // To load environment variables from .env file
 
-const indexRouter = require('./routes/index');
-const usersRouter = require('./routes/users');
+//const indexRouter = require('./routes/index');
+//const usersRouter = require('./routes/users');
 const getUserdataRouter=require('./routes/getUserdata')
 const addCostItem = require('./routes/addCostItem')
 const developersTeamRouter = require('./routes/developersTeam');
+const reportRouter = require('./routes/getReport');
 
 const app = express();
 
@@ -45,6 +46,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', developersTeamRouter);
 app.use('/', getUserdataRouter);
 app.use('/', addCostItem);
+app.use('/', reportRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
