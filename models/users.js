@@ -1,25 +1,6 @@
 const mongoose = require('mongoose');
 const {connect} = require("mongoose");
 
-// Define the MongoDB connection URL
-const mongoURI = 'mongodb+srv://niv:24ztZekehRLl8mwH@cluster0.lmjfp.mongodb.net/ServerSideProject?retryWrites=true&w=majority&appName=Cluster0'; // Replace 'yourDatabaseName' with the actual database name
-
-// Mongoose connection function
-const connectDB = async () => {
-    try {
-        await mongoose.connect(mongoURI, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-        });
-        console.log('MongoDB connected successfully!');
-    } catch (error) {
-        console.error('Error connecting to MongoDB:', error.message);
-        process.exit(1); // Exit process with failure
-    }
-};
-
-connectDB()
-
 // Define the user schema
 const userSchema = new mongoose.Schema({
     id: { type: Number, required: true, unique: true }, // Ensure the id is unique

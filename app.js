@@ -3,13 +3,32 @@ const express = require('express');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
+const mongoose = require('mongoose'); // Import mongoose
+require('dotenv').config(); // To load environment variables from .env file
 
 const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
 const getUserdataRouter=require('./routes/getUserdata')
+const addCostItem = require('./routes/addCostItem')
+const developersTeamRouter = require('./routes/developersTeam');
 
 const app = express();
-const developersTeamRouter = require('./routes/developersTeam');
+
+// Database connection
+const connectDB = async () => {
+  try {
+    await mongoose.connect(process.env.MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log('MongoDB connected successfully!');
+  } catch (error) {
+    console.error('Error connecting to MongoDB:', error.message);
+    process.exit(1); // Exit the process with failure
+  }
+};
+
+connectDB();
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -21,10 +40,11 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', indexRouter);
-app.use('/users', usersRouter);
+//app.use('/', indexRouter);
+//app.use('/users', usersRouter);
 app.use('/', developersTeamRouter);
 app.use('/', getUserdataRouter);
+app.use('/', addCostItem);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

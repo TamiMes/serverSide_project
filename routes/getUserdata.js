@@ -4,10 +4,6 @@ const user = require('../models/users'); // Assuming this is a Mongoose model
 
 router.get('/api/users/:id', async function (req, res) {
     try {
-        // // Validate the ID (assuming it's a MongoDB ObjectId)
-        // if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
-        //     return res.status(400).json({ error: 'Invalid user ID format' });
-        // }
 
         // Parse the ID as an integer
         const userId = parseInt(req.params.id, 10);
