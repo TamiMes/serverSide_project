@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const user = require('../models/users'); // Assuming this is a Mongoose model
 
+
 router.get('/api/users/:id', async function (req, res) {
     try {
 
@@ -22,7 +23,7 @@ router.get('/api/users/:id', async function (req, res) {
             first_name: getUser.first_name,
             last_name: getUser.last_name,
             id: getUser.id,
-            total: getUser.total_cost,
+            total: getUser.total,
         };
 
         res.json(userData);
