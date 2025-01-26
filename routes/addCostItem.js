@@ -40,24 +40,16 @@
 // });
 //
 // module.exports = router;
-
 const express = require('express');
 const router = express.Router();
 const Cost = require('../models/costs'); // Import the Cost model
 const User = require('../models/users'); // Import the User model
+const Report = require('../models/reports'); // Import the Report model
 
 /**
- * POST request to add a new cost item for a user.
+ * POST request to add a new cost item for a user and update the reports collection.
  *
  * @route POST /api/add
- * @param {string} description - The description of the cost item.
- * @param {string} category - The category of the cost item.
- * @param {number} userid - The unique ID of the user who is adding the cost item.
- * @param {number} sum - The sum of the cost item.
- * @param {Date} [date] - The date of the cost item (optional, defaults to the current date).
- * @returns {Object} The newly created cost item object, including user ID, description, category, sum, date, and cost item's ID.
- * @throws {400} Bad request if required fields are missing.
- * @throws {500} Internal server error if there is an issue with saving to the database.
  */
 router.post('/api/add', async (req, res) => {
     try {
@@ -65,26 +57,52 @@ router.post('/api/add', async (req, res) => {
 
         // Validate that required fields are provided
         if (!description || !category || !userid || !sum) {
-            return res.status(400).json({ error: 'Description, category, user_id, and sum are required' });
+            return res.status(400).json({ error: 'Description, category, userid, and sum are required' });
         }
 
-        // If no date is provided, use the current date
+        // Prepare date information
+        const costDate = date ? new Date(date) : new Date();
+        const year = costDate.getFullYear();
+        const month = costDate.getMonth() + 1; // Months are 0-indexed in JS
+
+        // ** Step 1: Add the cost item to the `costs` collection **
         const newCostItem = new Cost({
             description,
             category,
-            userid, // Save user_id as an Int32 (no need to convert)
+            userid,
             sum,
-            date: date || Date.now(), // Use the provided date or the current date
+            date: costDate,
         });
-
-        // Save the new cost item to the database
         const savedCostItem = await newCostItem.save();
 
-        // Update the total cost for the user
+        const categoryKey = `years.${year}.months.${month}.categories.${category}`;
+
+        // Step 1: Check if the path exists
+        const report = await Report.findOne({ userid });
+        if (!report || !report.years?.[year]?.months?.[month]?.categories?.[category]) {
+            // If the path does not exist, initialize it as an array
+            await Report.updateOne(
+                { userid },
+                {
+                    $set: { [`years.${year}.months.${month}.categories.${category}`]: [] },
+                },
+                { upsert: true }
+            );
+        }
+
+        // Step 2: Push the new cost item
+        await Report.updateOne(
+            { userid },
+            {
+                $push: { [categoryKey]: savedCostItem },
+            }
+        );
+
+        // ** Step 3: Update the total costs in the `users` collection **
         await User.updateOne(
-            { id: userid }, // Search by user_id as an Int32
-            { $inc: { total_cost: sum } }, // Increment the totalCosts field by the sum of the new cost item
-            { upsert: true } // Ensure the operation succeeds even if the user document doesn't exist
+            { id: userid },
+            { $inc: { total_cost: sum } },
+            { upsert: true }
         );
 
         // Send the newly created cost item as the response
@@ -96,8 +114,8 @@ router.post('/api/add', async (req, res) => {
             date: savedCostItem.date,
             _id: savedCostItem._id,
         });
-
     } catch (error) {
+        // Handle errors gracefully
         res.status(500).json({ error: error.message });
     }
 });
