@@ -14,8 +14,5 @@
     "mongoose": "^8.9.4",
     "morgan": "~1.9.1",
     "pug": "2.0.0-beta11"
-  },
-  "engines": {
-    "node": "16.x"
   }
 }
