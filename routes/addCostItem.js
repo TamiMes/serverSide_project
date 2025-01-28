@@ -1,55 +1,21 @@
-// const express = require('express');
-// const router = express.Router();
-// const Cost = require('../models/costs'); // Import the Cost model
-//
-// // POST request to add a new cost item
-// router.post('/api/add', async (req, res) => {
-//     try {
-//         const { description, category, user_id, sum, date } = req.body;
-//
-//         // Validate that required fields are provided
-//         if (!description || !category || !user_id || !sum) {
-//             return res.status(400).json({ error: 'Description, category, user_id, and sum are required' });
-//         }
-//
-//         // If no date is provided, use the current date
-//         const newCostItem = new Cost({
-//             description,
-//             category,
-//             user_id,
-//             sum,
-//             date: date || Date.now(), // Use the provided date or the current date
-//         });
-//
-//         // Save the new cost item to the database
-//         const savedCostItem = await newCostItem.save();
-//
-//         // Send the newly created cost item as the response
-//         res.status(201).json({
-//             user_id: savedCostItem.user_id,
-//             description: savedCostItem.description,
-//             sum: savedCostItem.sum,
-//             category: savedCostItem.category,
-//             date: savedCostItem.date,
-//             _id: savedCostItem._id,
-//         })
-//
-//     } catch (error) {
-//         res.status(500).json({ error: error.message });
-//     }
-// });
-//
-// module.exports = router;
+
 const express = require('express');
 const router = express.Router();
 const Cost = require('../models/costs'); // Import the Cost model
 const User = require('../models/users'); // Import the User model
-const Report = require('../models/reports'); // Import the Report model
 
 /**
- * POST request to add a new cost item for a user and update the reports collection.
+ * POST request to add a new cost item for a user.
  *
  * @route POST /api/add
+ * @param {string} description - The description of the cost item.
+ * @param {string} category - The category of the cost item.
+ * @param {number} userid - The unique ID of the user who is adding the cost item.
+ * @param {number} sum - The sum of the cost item.
+ * @param {Date} [date] - The date of the cost item (optional, defaults to the current date).
+ * @returns {Object} The newly created cost item object, including user ID, description, category, sum, date, and cost item's ID.
+ * @throws {400} Bad request if required fields are missing.
+ * @throws {500} Internal server error if there is an issue with saving to the database.
  */
 router.post('/api/add', async (req, res) => {
     try {
@@ -57,15 +23,32 @@ router.post('/api/add', async (req, res) => {
 
         // Validate that required fields are provided
         if (!description || !category || !userid || !sum) {
-            return res.status(400).json({ error: 'Description, category, userid, and sum are required' });
+            return res.status(400).json({ error: 'One of the fields is missing: description, category, user id, and sum are required' });
         }
 
-        // Prepare date information
-        const costDate = date ? new Date(date) : new Date();
-        const year = costDate.getFullYear();
-        const month = costDate.getMonth() + 1; // Months are 0-indexed in JS
+        // Check if the user exists
+        const userExists = await User.findOne({ id: userid });
+        if (!userExists) {
+            return res.status(404).json({ error: 'Cannot add cost item because the user does not exist' });
+        }
 
-        // ** Step 1: Add the cost item to the `costs` collection **
+        // Parse date or use the current date
+        const costDate = new Date(date || Date.now());
+        const today = new Date();
+       //new Date('Mon Feb 07 2025 23:26:08 GMT+0200 (Israel Standard Time)');
+
+
+        // if today is in the first 7 days of a new month, then we accept all time from prev month start until now
+        // else (if today is not the first 7 days of a month), then we accept all time from month start until now
+        const validFromDate = new Date(today);
+        validFromDate.setDate(1)
+
+        if(today.getDate() < 7) validFromDate.setMonth(today.getMonth() - 1)
+
+        if(costDate < validFromDate || costDate > today)
+            return res.status(400) .json({ error: 'Unfortunately The cost item date is outside the allowable time range.' });
+
+        // Save the new cost item to the database
         const newCostItem = new Cost({
             description,
             category,
@@ -75,33 +58,10 @@ router.post('/api/add', async (req, res) => {
         });
         const savedCostItem = await newCostItem.save();
 
-        const categoryKey = `years.${year}.months.${month}.categories.${category}`;
-
-        // Step 1: Check if the path exists
-        const report = await Report.findOne({ userid });
-        if (!report || !report.years?.[year]?.months?.[month]?.categories?.[category]) {
-            // If the path does not exist, initialize it as an array
-            await Report.updateOne(
-                { userid },
-                {
-                    $set: { [`years.${year}.months.${month}.categories.${category}`]: [] },
-                },
-                { upsert: true }
-            );
-        }
-
-        // Step 2: Push the new cost item
-        await Report.updateOne(
-            { userid },
-            {
-                $push: { [categoryKey]: savedCostItem },
-            }
-        );
-
-        // ** Step 3: Update the total costs in the `users` collection **
+        // Update the total cost for the user
         await User.updateOne(
             { id: userid },
-            { $inc: { total_cost: sum } },
+            { $inc: { total: sum } },
             { upsert: true }
         );
 
@@ -115,7 +75,6 @@ router.post('/api/add', async (req, res) => {
             _id: savedCostItem._id,
         });
     } catch (error) {
-        // Handle errors gracefully
         res.status(500).json({ error: error.message });
     }
 });
