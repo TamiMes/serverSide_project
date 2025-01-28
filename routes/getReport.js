@@ -80,7 +80,7 @@ async function getReportForMonth(res, id, year, month) {
 
     // Fetch costs for the user and month
     const costs = await Cost.find({
-        id,
+        userid: id,
         date: {$gte: startDate, $lte: endDate},
     });
 
