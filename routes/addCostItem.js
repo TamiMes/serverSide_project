@@ -1,45 +1,3 @@
-// const express = require('express');
-// const router = express.Router();
-// const Cost = require('../models/costs'); // Import the Cost model
-//
-// // POST request to add a new cost item
-// router.post('/api/add', async (req, res) => {
-//     try {
-//         const { description, category, user_id, sum, date } = req.body;
-//
-//         // Validate that required fields are provided
-//         if (!description || !category || !user_id || !sum) {
-//             return res.status(400).json({ error: 'Description, category, user_id, and sum are required' });
-//         }
-//
-//         // If no date is provided, use the current date
-//         const newCostItem = new Cost({
-//             description,
-//             category,
-//             user_id,
-//             sum,
-//             date: date || Date.now(), // Use the provided date or the current date
-//         });
-//
-//         // Save the new cost item to the database
-//         const savedCostItem = await newCostItem.save();
-//
-//         // Send the newly created cost item as the response
-//         res.status(201).json({
-//             user_id: savedCostItem.user_id,
-//             description: savedCostItem.description,
-//             sum: savedCostItem.sum,
-//             category: savedCostItem.category,
-//             date: savedCostItem.date,
-//             _id: savedCostItem._id,
-//         })
-//
-//     } catch (error) {
-//         res.status(500).json({ error: error.message });
-//     }
-// });
-//
-// module.exports = router;
 
 const express = require('express');
 const router = express.Router();
@@ -65,26 +23,46 @@ router.post('/api/add', async (req, res) => {
 
         // Validate that required fields are provided
         if (!description || !category || !userid || !sum) {
-            return res.status(400).json({ error: 'Description, category, user_id, and sum are required' });
+            return res.status(400).json({ error: 'One of the fields is missing: description, category, user id, and sum are required' });
         }
 
-        // If no date is provided, use the current date
+        // Check if the user exists
+        const userExists = await User.findOne({ id: userid });
+        if (!userExists) {
+            return res.status(404).json({ error: 'Cannot add cost item because the user does not exist' });
+        }
+
+        // Parse date or use the current date
+        const costDate = new Date(date || Date.now());
+        const today = new Date();
+        //new Date('Mon Feb 07 2025 23:26:08 GMT+0200 (Israel Standard Time)');
+
+
+        // if today is in the first 7 days of a new month, then we accept all time from prev month start until now
+        // else (if today is not the first 7 days of a month), then we accept all time from month start until now
+        const validFromDate = new Date(today);
+        validFromDate.setDate(1)
+
+        if(today.getDate() < 7) validFromDate.setMonth(today.getMonth() - 1)
+
+        if(costDate < validFromDate || costDate > today)
+            return res.status(400) .json({ error: 'Unfortunately The cost item date is outside the allowable time range.' });
+
+        // Save the new cost item to the database
         const newCostItem = new Cost({
             description,
             category,
-            userid, // Save user_id as an Int32 (no need to convert)
+            userid,
             sum,
-            date: date || Date.now(), // Use the provided date or the current date
+            date: costDate,
         });
-
-        // Save the new cost item to the database
         const savedCostItem = await newCostItem.save();
 
         // Update the total cost for the user
         await User.updateOne(
-            { id: userid }, // Search by user_id as an Int32
-            { $inc: { total_cost: sum } }, // Increment the totalCosts field by the sum of the new cost item
-            { upsert: true } // Ensure the operation succeeds even if the user document doesn't exist
+            { id: userid },
+            { $inc: { total: sum } },
+            { upsert: true }
         );
 
         // Send the newly created cost item as the response
@@ -96,7 +74,6 @@ router.post('/api/add', async (req, res) => {
             date: savedCostItem.date,
             _id: savedCostItem._id,
         });
-
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
