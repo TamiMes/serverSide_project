@@ -1,112 +1,110 @@
-
 const express = require('express');
 const router = express.Router();
-const Report = require('../models/reports'); // Import the Report model
+const Report = require('../models/reports');
 const Cost = require('../models/costs');
 const User = require("../models/users");
 
-/**
- * GET request to retrieve a monthly report of costs, grouped by category.
- *
- * @route GET /api/report
- * @param {string} id - The unique ID of the user.
- * @param {string} year - The year for the report (e.g., 2025).
- * @param {string} month - The month for the report (1 to 12).
- * @returns {Object} A JSON object representing grouped costs by category.
- * @throws {400} Bad request if any query parameter is missing or invalid.
- * @throws {500} Internal server error if an error occurs while fetching the report.
- */
 router.get('/api/report', async (req, res) => {
     try {
         const { id, year, month } = req.query;
 
         // Validate query parameters
         if (!id || !year || !month) {
-            return res.status(400).json({ error: 'Unfortunately one of the fields is missing: user ID , year, and month ' });
+            return res.status(400).json({ error: 'Missing one of the required fields: user ID, year, or month' });
         }
+
+        // Check if user exists
         const userExists = await User.findOne({ id: id });
         if (!userExists) {
-            return res.status(404).json({ error: 'Cannot return report  because the user does not exist' });
+            return res.status(404).json({ error: 'User does not exist' });
         }
 
-        const projectionPath = `years.${year}.months.${month}.categories`;
+        // Check if report exists in DB
+        let report = await Report.findOne({ userid: id });
 
-        // Check for existing report
-        let report = await Report.findOne(
-            { id },
-            { [projectionPath]: 1, _id: 0 }
-        );
-
-        // If the report exists, we will return it
-        if (report?.years?.[year]?.months?.[month]?.categories) {
-            return res.status(200).json(report.years[year].months[month].categories);
+        if (report?.years?.[year]?.months?.[month]) {
+            return res.status(200).json({
+                userid: id,
+                year: parseInt(year),
+                month: parseInt(month),
+                costs: report.years[year].months[month].costs
+            });
         }
 
-        // Calculate the last day of the given month
-        const lastDayOfMonth = new Date(year, month, 0); // Date for the last day of the month
-
-        // Add 7 days to the end of the month
+        // Calculate last day of the month and 7-day extension
+        const lastDayOfMonth = new Date(year, month, 0);
         const endLimit = new Date(lastDayOfMonth);
         endLimit.setDate(lastDayOfMonth.getDate() + 7);
 
-        // Determine if the current date is past the limit period(7 days till end of the month)
+        // Mock today's date (for testing purposes)
+        //const today = new Date("Fri Feb 7 2025 20:31:42 GMT+0200");
         const today = new Date();
 
-        report = await getReportForMonth(id, year, month)
+        // Generate monthly report
+        const monthlyReport = await getMonthlyReport(id, year, month);
 
-        // Condition 2: More than 7 days have passed from the end of the month
-        if (today > endLimit){
-            // Update the report with the grouped data
-            const updatePath = `years.${year}.months.${month}.categories`;
+        // Store in DB only after the allowed period
+        if (today > endLimit) {
             await Report.updateOne(
-                { id },
-                { $set: { [updatePath]: report } },
+                { userid: id },
+                { $set: { [`years.${year}.months.${month}`]: { costs: monthlyReport.costs } } },
                 { upsert: true }
             );
         }
 
-        return res.status(200).json(report);
-
+        return res.status(200).json(monthlyReport);
     } catch (error) {
-        if (error instanceof NotFoundError){
-            console.error(`error caught: ${error.message} - query: ${JSON.stringify(req.query)}`)
+        if (error instanceof NotFoundError) {
+            console.error(`Error caught: ${error.message} - query: ${JSON.stringify(req.query)}`);
             return res.status(error.errorCode).json({ error: error.message });
         }
-        // Handle unexpected errors
         return res.status(500).json({ error: error.message });
     }
 });
 
 class NotFoundError extends Error {
     errorCode = 404;
-    constructor(errorMessage){
-        super(errorMessage)
+    constructor(errorMessage) {
+        super(errorMessage);
     }
 }
 
+// Returns the monthly report of user
+async function getMonthlyReport(id, year, month) {
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0);
 
-async function getReportForMonth(id, year, month) {
-    const startDate = new Date(year, month - 1, 1); // Start of the month
-    const endDate = new Date(year, month, 0); // End of the month
-
-    // Fetch costs for the user and month
+    // Fetch user costs within the given month
     const costs = await Cost.find({
         userid: id,
-        date: {$gte: startDate, $lte: endDate},
+        date: { $gte: startDate, $lte: endDate },
     });
 
-    if (!costs.length) {
-        throw new NotFoundError('No costs found for the specified user, year, and month')
-    }
+    const categories = ["food", "education", "health", "sport", "housing"];
 
-    // Group costs by category
-    return costs.reduce((costGroups, cost) => {
-        if (!costGroups[cost.category]) {
-            costGroups[cost.category] = [];
+    // Initialize cost groups as an object instead of an array
+    const costGroups = {};
+    categories.forEach(category => {
+        costGroups[category] = [];
+    });
+
+    // Populate cost groups
+    costs.forEach(cost => {
+        if (costGroups[cost.category]) {
+            costGroups[cost.category].push({
+                sum: cost.sum,
+                description: cost.description,
+                day: new Date(cost.date).getDate()
+            });
         }
-        costGroups[cost.category].push(cost);
-        return costGroups;
-    }, {})
+    });
+
+    return {
+        userid: id,
+        year: parseInt(year),
+        month: parseInt(month),
+        costs: costGroups // Now costs is an object, not an array
+    };
 }
 
 module.exports = router;
