@@ -9,7 +9,7 @@ const User = require("../models/users"); // Import the Cost model
  * GET request to retrieve a monthly report of costs, grouped by category.
  *
  * @route GET /api/report
- * @param {string} userid - The unique ID of the user.
+ * @param {string} id - The unique ID of the user.
  * @param {string} year - The year for the report (e.g., 2025).
  * @param {string} month - The month for the report (1 to 12).
  * @returns {Object} A JSON object representing grouped costs by category.
@@ -18,13 +18,13 @@ const User = require("../models/users"); // Import the Cost model
  */
 router.get('/api/report', async (req, res) => {
     try {
-        const { userid, year, month } = req.query;
+        const { id, year, month } = req.query;
 
         // Validate query parameters
-        if (!userid || !year || !month) {
+        if (!id || !year || !month) {
             return res.status(400).json({ error: 'Unfortunately one of the fields is missing: user ID , year, and month ' });
         }
-        const userExists = await User.findOne({ id: userid });
+        const userExists = await User.findOne({ id: id });
         if (!userExists) {
             return res.status(404).json({ error: 'Cannot return report  because the user does not exist' });
         }
@@ -33,7 +33,7 @@ router.get('/api/report', async (req, res) => {
 
         // Check for existing report
         let report = await Report.findOne(
-            { userid },
+            { id },
             { [projectionPath]: 1, _id: 0 }
         );
 
@@ -52,14 +52,14 @@ router.get('/api/report', async (req, res) => {
         // Determine if the current date is past the limit period(7 days till end of the month)
         const today = new Date();
 
-        report = await getReportForMonth(res, userid, year, month)
+        report = await getReportForMonth(res, id, year, month)
 
         // Condition 2: More than 7 days have passed from the end of the month
         if (today > endLimit){
             // Update the report with the grouped data
             const updatePath = `years.${year}.months.${month}.categories`;
             await Report.updateOne(
-                { userid },
+                { id },
                 { $set: { [updatePath]: report } },
                 { upsert: true }
             );
@@ -74,13 +74,13 @@ router.get('/api/report', async (req, res) => {
 });
 
 
-async function getReportForMonth(res, userid, year, month) {
+async function getReportForMonth(res, id, year, month) {
     const startDate = new Date(year, month - 1, 1); // Start of the month
     const endDate = new Date(year, month, 0); // End of the month
 
     // Fetch costs for the user and month
     const costs = await Cost.find({
-        userid,
+        userid: id,
         date: {$gte: startDate, $lte: endDate},
     });
 
@@ -89,12 +89,12 @@ async function getReportForMonth(res, userid, year, month) {
     }
 
     // Group costs by category
-    return costs.reduce((acc, cost) => {
-        if (!acc[cost.category]) {
-            acc[cost.category] = [];
+    return costs.reduce((costGroups, cost) => {
+        if (!costGroups[cost.category]) {
+            costGroups[cost.category] = [];
         }
-        acc[cost.category].push(cost);
-        return acc;
+        costGroups[cost.category].push(cost);
+        return costGroups;
     }, {})
 }
 
