@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const Report = require('../models/reports'); // Import the Report model
 const Cost = require('../models/costs');
-const User = require("../models/users"); // Import the Cost model
+const User = require("../models/users");
 
 /**
  * GET request to retrieve a monthly report of costs, grouped by category.
@@ -52,7 +52,7 @@ router.get('/api/report', async (req, res) => {
         // Determine if the current date is past the limit period(7 days till end of the month)
         const today = new Date();
 
-        report = await getReportForMonth(res, id, year, month)
+        report = await getReportForMonth(id, year, month)
 
         // Condition 2: More than 7 days have passed from the end of the month
         if (today > endLimit){
@@ -68,13 +68,24 @@ router.get('/api/report', async (req, res) => {
         return res.status(200).json(report);
 
     } catch (error) {
+        if (error instanceof NotFoundError){
+            console.error(`error caught: ${error.message} - query: ${JSON.stringify(req.query)}`)
+            return res.status(error.errorCode).json({ error: error.message });
+        }
         // Handle unexpected errors
-        res.status(500).json({ error: error.message });
+        return res.status(500).json({ error: error.message });
     }
 });
 
+class NotFoundError extends Error {
+    errorCode = 404;
+    constructor(errorMessage){
+        super(errorMessage)
+    }
+}
 
-async function getReportForMonth(res, id, year, month) {
+
+async function getReportForMonth(id, year, month) {
     const startDate = new Date(year, month - 1, 1); // Start of the month
     const endDate = new Date(year, month, 0); // End of the month
 
@@ -85,7 +96,7 @@ async function getReportForMonth(res, id, year, month) {
     });
 
     if (!costs.length) {
-        return res.status(404).json({error: 'Unfortunately no costs found for the specified user, year, and month'});
+        throw new NotFoundError('No costs found for the specified user, year, and month')
     }
 
     // Group costs by category
