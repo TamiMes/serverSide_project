@@ -35,7 +35,6 @@ router.post('/api/add', async (req, res) => {
         // Parse date or use the current date
         const costDate = new Date(date || Date.now());
         const today = new Date();
-       //new Date('Mon Feb 07 2025 23:26:08 GMT+0200 (Israel Standard Time)');
 
 
         // if today is in the first 7 days of a new month, then we accept all time from prev month start until now
