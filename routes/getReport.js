@@ -9,8 +9,11 @@ router.get('/api/report', async (req, res) => {
         const { id, year, month } = req.query;
 
         // Validate query parameters
-        if (!id || !year || !month || isNaN(id) || isNaN(year) || isNaN(month)) {
+        if (!id || !year || !month ) {
             return res.status(400).json({ error: 'Missing one of the required fields: user ID, year, or month' });
+        }
+        if ( isNaN(id) || isNaN(year) || isNaN(month)) {
+            return res.status(400).json({ error: 'Month/year/id need to be  numbers ' });
         }
 
         // Check if user exists

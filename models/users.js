@@ -18,7 +18,8 @@ const userSchema = new mongoose.Schema({
     last_name: { type: String, required: true },
     total: { type: Number, required: true },
 }, {
-    timestamps: true, // Optional: Adds createdAt and updatedAt fields automatically
+   // Adds createdAt and updatedAt fields automatically
+    timestamps: true,
 });
 
 /**
