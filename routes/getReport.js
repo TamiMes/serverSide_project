@@ -9,7 +9,7 @@ router.get('/api/report', async (req, res) => {
         const { id, year, month } = req.query;
 
         // Validate query parameters
-        if (!id || !year || !month) {
+        if (!id || !year || !month || isNaN(id) || isNaN(year) || isNaN(month)) {
             return res.status(400).json({ error: 'Missing one of the required fields: user ID, year, or month' });
         }
 
@@ -24,7 +24,7 @@ router.get('/api/report', async (req, res) => {
 
         if (report?.years?.[year]?.months?.[month]) {
             return res.status(200).json({
-                userid: id,
+                userid: report.userid,
                 year: parseInt(year),
                 month: parseInt(month),
                 costs: report.years[year].months[month].costs
@@ -36,7 +36,7 @@ router.get('/api/report', async (req, res) => {
         const endLimit = new Date(lastDayOfMonth);
         endLimit.setDate(lastDayOfMonth.getDate() + 7);
 
-        // Mock today's date (for testing purposes)
+
         //const today = new Date("Fri Feb 7 2025 20:31:42 GMT+0200");
         const today = new Date();
 
@@ -72,38 +72,41 @@ class NotFoundError extends Error {
 // Returns the monthly report of user
 async function getMonthlyReport(id, year, month) {
     const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0);
+    const endDate = new Date(year, month, 1);
+    const idAsNumber = parseInt(id)
 
-    // Fetch user costs within the given month
-    const costs = await Cost.find({
-        userid: id,
-        date: { $gte: startDate, $lte: endDate },
+    // Fetch user costs within the given month and year
+    const reportCosts = await Cost.find({
+        userid: idAsNumber,
+        date: { $gte: startDate, $lt: endDate },
     });
 
     const categories = ["food", "education", "health", "sport", "housing"];
 
-    // Initialize cost groups as an object instead of an array
+    // Initialize cost groups as an object
     const costGroups = {};
     categories.forEach(category => {
         costGroups[category] = [];
     });
 
     // Populate cost groups
-    costs.forEach(cost => {
-        if (costGroups[cost.category]) {
+    reportCosts.forEach((cost => {
+
             costGroups[cost.category].push({
                 sum: cost.sum,
                 description: cost.description,
                 day: new Date(cost.date).getDate()
             });
-        }
-    });
+
+    }))
+    //console.log(costGroups);
+
 
     return {
-        userid: id,
+        userid: parseInt(id),
         year: parseInt(year),
         month: parseInt(month),
-        costs: costGroups // Now costs is an object, not an array
+        costs: costGroups
     };
 }
 
