@@ -4,6 +4,9 @@ const router = express.Router();
 const Cost = require('../models/costs'); // Import the Cost model
 const User = require('../models/users'); // Import the User model
 
+// Define valid categories
+const validCategories = ["food", "education", "health", "sport", "housing"];
+
 /**
  * POST request to add a new cost item for a user.
  *
@@ -24,6 +27,11 @@ router.post('/api/add', async (req, res) => {
         // Validate that required fields are provided
         if (!description || !category || !userid || !sum) {
             return res.status(400).json({ error: 'One of the fields is missing: description, category, user id, and sum are required' });
+        }
+
+        // Validate if the category is one of the valid categories
+        if (!validCategories.includes(category)) {
+            return res.status(400).json({ error: 'Category not supported', invalidCategory: category });
         }
 
         // Check if the user exists

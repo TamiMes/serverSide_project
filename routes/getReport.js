@@ -13,7 +13,15 @@ router.get('/api/report', async (req, res) => {
             return res.status(400).json({ error: 'Missing one of the required fields: user ID, year, or month' });
         }
         if ( isNaN(id) || isNaN(year) || isNaN(month)) {
-            return res.status(400).json({ error: 'Month/year/id need to be  numbers ' });
+            return res.status(400).json({ error: 'Month/year/id must be Integers' });
+        }
+
+        // Convert month to an integer
+        const monthInt = parseInt(month);
+
+        // Check if the month is between 1 and 12
+        if (monthInt < 1 || monthInt > 12) {
+            return res.status(400).json({ error: 'Month must be between 1 and 12' });
         }
 
         // Check if user exists
