@@ -1,6 +1,4 @@
 const mongoose = require('mongoose');
-const {connect} = require("mongoose");
-
 /**
  * User schema to define the structure of the user data.
  *
@@ -27,7 +25,9 @@ const userSchema = new mongoose.Schema({
  *
  * @type {mongoose.Model<User>}
  */
-const User = mongoose.model('User', userSchema);
+
 
 // Export the User model and mongoose for reuse in other parts of the app
-module.exports = User;
+module.exports = mongoose.model('User', userSchema);
+
+

@@ -1,11 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const user = require('../models/users'); // Assuming this is a Mongoose model
+const User = require('../models/users'); // Assuming this is a Mongoose model
 
-
+/**
+ * @route GET /api/users/:id
+ * @description Retrieves user information by user ID.
+ * @param {express.Request} req - The request object containing the user ID as a route parameter.
+ * @param {express.Response} res - The response object used to return the user data or error messages.
+ * @returns {Object} The user's details if found, or an error message.
+ */
 router.get('/api/users/:id', async function (req, res) {
     try {
-
         // Parse the ID as an integer
         const userId = parseInt(req.params.id, 10);
 
@@ -15,7 +20,7 @@ router.get('/api/users/:id', async function (req, res) {
         }
 
         // Fetch user data
-        const getUser = await user.findOne({ id: userId });
+        const getUser = await User.findOne({ id: userId });
         if (!getUser) return res.status(404).json({ error: 'User not found' });
 
         // Format response
@@ -27,9 +32,14 @@ router.get('/api/users/:id', async function (req, res) {
         };
 
         res.json(userData);
-    } catch (error) {
+    }
+    catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
 module.exports = router;
+
+
+
+

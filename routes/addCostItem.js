@@ -1,4 +1,3 @@
-
 const express = require('express');
 const router = express.Router();
 const Cost = require('../models/costs'); // Import the Cost model
@@ -81,9 +80,11 @@ router.post('/api/add', async (req, res) => {
             date: savedCostItem.date,
             _id: savedCostItem._id,
         });
-    } catch (error) {
+    }
+    catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
 module.exports = router;
+

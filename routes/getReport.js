@@ -1,9 +1,30 @@
+/**
+ * Express module
+ * @const express
+ */
 const express = require('express');
+/**
+ * Express router to mount report-related functions
+ * @const router
+ */
 const router = express.Router();
 const Report = require('../models/reports');
 const Cost = require('../models/costs');
 const User = require("../models/users");
 
+/**
+ * Handles GET requests to fetch a user's monthly report.
+ * @name GET /api/report
+ * @function
+ * @async
+ * @param {Object} req - Express request object
+ * @param {Object} req.query - Query parameters
+ * @param {string} req.query.id - User ID
+ * @param {string} req.query.year - Year of the report
+ * @param {string} req.query.month - Month of the report
+ * @param {Object} res - Express response object
+ * @returns {Object} JSON response containing the report data or error message
+ */
 router.get('/api/report', async (req, res) => {
     try {
         const { id, year, month } = req.query;
@@ -16,10 +37,7 @@ router.get('/api/report', async (req, res) => {
             return res.status(400).json({ error: 'Month/year/id must be Integers' });
         }
 
-        // Convert month to an integer
         const monthInt = parseInt(month);
-
-        // Check if the month is between 1 and 12
         if (monthInt < 1 || monthInt > 12) {
             return res.status(400).json({ error: 'Month must be between 1 and 12' });
         }
@@ -47,8 +65,6 @@ router.get('/api/report', async (req, res) => {
         const endLimit = new Date(lastDayOfMonth);
         endLimit.setDate(lastDayOfMonth.getDate() + 7);
 
-
-        //const today = new Date("Fri Feb 7 2025 20:31:42 GMT+0200");
         const today = new Date();
 
         // Generate monthly report
@@ -64,7 +80,8 @@ router.get('/api/report', async (req, res) => {
         }
 
         return res.status(200).json(monthlyReport);
-    } catch (error) {
+    }
+    catch (error) {
         if (error instanceof NotFoundError) {
             console.error(`Error caught: ${error.message} - query: ${JSON.stringify(req.query)}`);
             return res.status(error.errorCode).json({ error: error.message });
@@ -73,18 +90,42 @@ router.get('/api/report', async (req, res) => {
     }
 });
 
+/**
+ * Custom error class for not found errors
+ * @class NotFoundError
+ * @extends Error
+ */
 class NotFoundError extends Error {
+    /**
+     * HTTP status code for not found error
+     * @type {number}
+     */
     errorCode = 404;
+
+    /**
+     * Creates a NotFoundError instance
+     * @param {string} errorMessage - Error message
+     */
     constructor(errorMessage) {
         super(errorMessage);
     }
 }
 
-// Returns the monthly report of user
+/**
+ * Retrieves the monthly cost report for a given user.
+ * @async
+ * @function getMonthlyReport
+ * @param {string} id - User ID
+ * @param {string} year - Year of the report
+ * @param {string} month - Month of the report
+ * @returns {Promise<Object>} A report object containing user ID, year, month, and categorized costs
+ */
 async function getMonthlyReport(id, year, month) {
+    //First day of month
     const startDate = new Date(year, month - 1, 1);
+    //Last day of month
     const endDate = new Date(year, month, 1);
-    const idAsNumber = parseInt(id)
+    const idAsNumber = parseInt(id);
 
     // Fetch user costs within the given month and year
     const reportCosts = await Cost.find({
@@ -94,24 +135,20 @@ async function getMonthlyReport(id, year, month) {
 
     const categories = ["food", "education", "health", "sport", "housing"];
 
-    // Initialize cost groups as an object
+    // Initialize cost groups
     const costGroups = {};
     categories.forEach(category => {
         costGroups[category] = [];
     });
 
     // Populate cost groups
-    reportCosts.forEach((cost => {
-
-            costGroups[cost.category].push({
-                sum: cost.sum,
-                description: cost.description,
-                day: new Date(cost.date).getDate()
-            });
-
-    }))
-    //console.log(costGroups);
-
+    reportCosts.forEach(cost => {
+        costGroups[cost.category].push({
+            sum: cost.sum,
+            description: cost.description,
+            day: new Date(cost.date).getDate()
+        });
+    });
 
     return {
         userid: parseInt(id),
@@ -122,3 +159,5 @@ async function getMonthlyReport(id, year, month) {
 }
 
 module.exports = router;
+
+
