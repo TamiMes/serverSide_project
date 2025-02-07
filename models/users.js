@@ -11,7 +11,7 @@ const mongoose = require('mongoose');
  * @property {Date} updatedAt - Automatically generated timestamp for when the user was last updated.
  */
 const userSchema = new mongoose.Schema({
-    id: { type: Number, required: true, unique: true }, // Ensure the id is unique
+    id: { type: Number, required: true, unique: true },
     first_name: { type: String, required: true },
     last_name: { type: String, required: true },
     total: { type: Number, required: true },
@@ -25,7 +25,6 @@ const userSchema = new mongoose.Schema({
  *
  * @type {mongoose.Model<User>}
  */
-
 
 // Export the User model and mongoose for reuse in other parts of the app
 module.exports = mongoose.model('User', userSchema);
