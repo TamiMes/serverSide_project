@@ -26,7 +26,6 @@ const userSchema = new mongoose.Schema({
  * @type {mongoose.Model<User>}
  */
 
-// Export the User model and mongoose for reuse in other parts of the app
 module.exports = mongoose.model('User', userSchema);
 
 

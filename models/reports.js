@@ -12,7 +12,8 @@ const reportSchema = new Schema({
     userid: { type: Number, required: true, unique: true }, // Unique user ID
     years: {
         type: Object,
-        default: {}, // Default as an empty object for storing yearly data
+        // Default as an empty object for storing yearly data
+        default: {},
     },
 });
 
