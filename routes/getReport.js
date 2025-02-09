@@ -51,12 +51,12 @@ router.get('/api/report', async (req, res) => {
         // Check if report exists in DB
         let report = await Report.findOne({ userid: id });
 
-        if (report?.years?.[year]?.months?.[month]) {
+        if (report?.years?.[year]?.months?.[monthInt]) {
             return res.status(200).json({
                 userid: report.userid,
                 year: parseInt(year),
                 month: parseInt(month),
-                costs: report.years[year].months[month].costs
+                costs: report.years[year].months[monthInt].costs
             });
         }
 
@@ -74,7 +74,7 @@ router.get('/api/report', async (req, res) => {
         if (today > endLimit) {
             await Report.updateOne(
                 { userid: id },
-                { $set: { [`years.${year}.months.${month}`]: { costs: monthlyReport.costs } } },
+                { $set: { [`years.${year}.months.${monthInt}`]: { costs: monthlyReport.costs } } },
                 { upsert: true }
             );
         }
