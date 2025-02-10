@@ -1,10 +1,10 @@
 import requests
 import json
 
-USE_LOCAL = True  # True for LOCAL Server, False for Online Render Server
+USE_LOCAL = False  # True for LOCAL Server, False for Online Render Server
 
 # Define API endpoints
-BASE_URL = "https://serverside-project-csrh.onrender.com" if not USE_LOCAL else "http://localhost:3008"
+BASE_URL = "http://localhost:3000" if USE_LOCAL else "https://serverside-project-csrh.onrender.com"
 
 
 def get_filename():
