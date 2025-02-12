@@ -133,9 +133,16 @@ async function getMonthlyReport(id, year, month) {
         date: { $gte: startDate, $lt: endDate },
     });
 
+    /**
+     * List of expense categories.
+     * @const {string[]} categories
+     */
     const categories = ["food", "education", "health", "sport", "housing"];
 
-    // Initialize cost groups
+    /**
+     * Object to store categorized cost data.
+     * @const {Object} costGroups
+     */
     const costGroups = {};
     categories.forEach(category => {
         costGroups[category] = [];
