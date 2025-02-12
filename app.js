@@ -5,13 +5,12 @@ const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const mongoose = require('mongoose'); // Import mongoose
 require('dotenv').config(); // To load environment variables from .env file
-
-//const indexRouter = require('./routes/index');
-//const usersRouter = require('./routes/users');
 const getUserdataRouter=require('./routes/getUserDetails')
 const addCostItem = require('./routes/addCostItem')
 const developersTeamRouter = require('./routes/getDeveloperTeamMembers');
 const reportRouter = require('./routes/getReport');
+const usersRouter = require('./routes/users');
+const indexRouter = require('./routes/index');
 
 const app = express();
 
@@ -41,22 +40,36 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+/**
+ * Initialize routes and middleware for the app.
+ */
+app.use('/', indexRouter);
+app.use('/users', usersRouter);
+app.use('/api/about', developersTeamRouter);
+app.use('/api/users', getUserdataRouter);
+app.use('/api/add', addCostItem);
+app.use('/api/report', reportRouter);
 
-//app.use('/', indexRouter);
-//app.use('/users', usersRouter);
-app.use('/', developersTeamRouter);
-app.use('/', getUserdataRouter);
-app.use('/', addCostItem);
-app.use('/', reportRouter);
 
-
-
-// Catch 404 and return JSON response
+/**
+ * Catch 404 errors and return JSON response.
+ *
+ * @param {import('express').Request} req - Express request object.
+ * @param {import('express').Response} res - Express response object.
+ */
 app.use((req, res) => {
   res.status(404).json({ error: "Endpoint not found" });
 });
 
-// Global error handler (for all errors)
+/**
+ * Global error handler.
+ * Logs errors and returns JSON response with appropriate status code.
+ *
+ * @param {Error} err - The error object.
+ * @param {import('express').Request} req - Express request object.
+ * @param {import('express').Response} res - Express response object.
+ * @param {import('express').NextFunction} next - Express next function.
+ */
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(err.status || 500).json({ error: err.message || "Internal Server Error" });

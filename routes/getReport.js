@@ -25,7 +25,7 @@ const User = require("../models/users");
  * @param {Object} res - Express response object
  * @returns {Object} JSON response containing the report data or error message
  */
-router.get('/api/report', async (req, res) => {
+router.get('/', async (req, res) => {
     try {
         const { id, year, month } = req.query;
 

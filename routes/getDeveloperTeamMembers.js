@@ -11,7 +11,7 @@ const router = express.Router();
  * @returns {string} 200.last_name - The last name of the developer.
  */
 
-router.get('/api/about', function (req, res) {
+router.get('/', function (req, res) {
     const teamDevelopers = [
         { first_name: 'Niv', last_name: 'Neuvirth' },
         { first_name: 'Tamara', last_name: 'Mesengiser' },

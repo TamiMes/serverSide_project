@@ -19,7 +19,7 @@ const validCategories = ["food", "education", "health", "sport", "housing"];
  * @throws {400} Bad request if required fields are missing.
  * @throws {500} Internal server error if there is an issue with saving to the database.
  */
-router.post('/api/add', async (req, res) => {
+router.post('/', async (req, res) => {
     try {
         const { description, category, userid, sum, date } = req.body;
 

@@ -9,7 +9,7 @@ const User = require('../models/users'); // Assuming this is a Mongoose model
  * @param {express.Response} res - The response object used to return the user data or error messages.
  * @returns {Object} The user's details if found, or an error message.
  */
-router.get('/api/users/:id', async function (req, res) {
+router.get('/:id', async function (req, res) {
     try {
         // Parse the ID as an integer
         const userId = parseInt(req.params.id, 10);
