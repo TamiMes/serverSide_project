@@ -48,7 +48,7 @@ router.get('/', async (req, res) => {
             return res.status(404).json({ error: 'User does not exist' });
         }
 
-        // Check if report exists in DB
+        // Check if report exists in DB and if exists than return it
         let report = await Report.findOne({ userid: id });
 
         if (report?.years?.[year]?.months?.[monthInt]) {
